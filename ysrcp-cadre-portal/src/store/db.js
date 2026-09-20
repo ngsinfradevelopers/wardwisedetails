@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS = {
 function emit() { window.dispatchEvent(new Event('ysrcp-db-change')) }
 
 function fromRow(row) {
-  return { ...row, id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
+  return { ...row, id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, subCaste: row.sub_caste, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
 }
 
 function toRow(data, user) {
