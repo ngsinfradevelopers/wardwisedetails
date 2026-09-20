@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Register from './pages/Register.jsx'
 import Registrations from './pages/Registrations.jsx'
 import Settings from './pages/Settings.jsx'
+import Print from './pages/Print.jsx'
 import { useSession } from './hooks/useSession.js'
 
 function Protected({ children }) {
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="register/:id" element={<Register />} />
         <Route path="registrations" element={<Registrations />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="print" element={<Print />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

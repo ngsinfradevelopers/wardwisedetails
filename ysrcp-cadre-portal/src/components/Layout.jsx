@@ -8,6 +8,7 @@ const nav = [
   { to: '/register', label: 'New Registration', icon: '👤+' },
   { to: '/registrations', label: 'Registrations', icon: '☷' },
   { to: '/settings', label: 'Settings', icon: '⚙' },
+  { to: '/print', label: 'Print Reports', icon: '▤' },
 ]
 
 export default function Layout() {

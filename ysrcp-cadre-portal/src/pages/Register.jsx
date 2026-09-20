@@ -8,18 +8,30 @@ const PHONE_RE = /^\d{10}$/
 const EMPTY = {
   committeeType: '', committeeLevel: '', designation: '',
   surname: '', name: '', fatherHusband: '', age: '', voterId: '', phone: '',
-  gender: '', qualification: '', profession: '', caste: '', casteCategory: '',
+  gender: '', qualification: '', profession: '', caste: '', casteCategory: '', subCaste: '',
   village: 'Santhyamguluru', district: 'Prakasam', mandal: '', ward: '', status: 'Pending', photo: null,
 }
 
 export default function Register() {
   const { id } = useParams()
   const nav = useNavigate()
-  const settings = db.getSettings()
+  const [settings, setSettings] = useState(db.getSettings())
+  const [portalWards, setPortalWards] = useState([])
+  const [castes, setCastes] = useState([])
+  const [subCastes, setSubCastes] = useState([])
   const isEdit = !!id
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [loadError, setLoadError] = useState('')
+
+  useEffect(() => {
+    Promise.all([db.fetchWards(), db.fetchCastes()]).then(([wardsFromDb, castesFromDb]) => {
+      setPortalWards(wardsFromDb)
+      setCastes(castesFromDb)
+      const mandals = [...new Set(wardsFromDb.map(ward => ward.mandal).filter(Boolean))]
+      if (mandals.length) setSettings(current => ({ ...current, mandals: mandals.map(name => ({ name, wards: wardsFromDb.filter(ward => ward.mandal === name).map(ward => ward.label) })) }))
+    }).catch(error => setLoadError(error.message))
+  }, [])
 
   useEffect(() => {
     if (isEdit) {
@@ -27,10 +39,13 @@ export default function Register() {
     }
   }, [id])
 
-  const wards = useMemo(
-    () => settings.mandals.find(m => m.name === form.mandal)?.wards || [],
-    [form.mandal, settings]
-  )
+  useEffect(() => {
+    const caste = castes.find(item => item.name === form.caste)
+    if (caste) db.fetchSubCastes(caste.id).then(setSubCastes).catch(error => setLoadError(error.message))
+    else setSubCastes([])
+  }, [castes, form.caste])
+
+  const wards = useMemo(() => portalWards.filter(ward => ward.mandal === form.mandal), [form.mandal, portalWards])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const sel = (k, label, options, required = true) => (
@@ -123,20 +138,27 @@ export default function Register() {
           {sel('qualification', 'Qualification', settings.qualifications)}
           {sel('profession', 'Profession', settings.professions, false)}
           <div className="field">
-            <label>Caste (Optional)</label>
-            <select value={form.caste} onChange={e => {
-              const c = settings.castes.find(x => x.name === e.target.value)
-              setForm(f => ({ ...f, caste: e.target.value, casteCategory: c ? c.category : f.casteCategory }))
-            }}>
-              <option value="">Search or select caste</option>
-              {settings.castes.map(c => <option key={c.name} value={c.name}>{c.name} ({c.category})</option>)}
+            <label>Caste Category</label>
+            <select value={form.casteCategory} onChange={e => setForm(f => ({ ...f, casteCategory: e.target.value, caste: '', subCaste: '' }))}>
+              <option value="">Select category</option>
+              {settings.casteCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div className="field">
-            <label>Caste Category</label>
-            <select value={form.casteCategory} onChange={e => set('casteCategory', e.target.value)}>
-              <option value="">Select category</option>
-              {settings.casteCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            <label>Caste (Optional)</label>
+            <select value={form.caste} onChange={e => {
+              const c = castes.find(x => x.name === e.target.value)
+              setForm(f => ({ ...f, caste: e.target.value, casteCategory: c ? c.category : f.casteCategory, subCaste: '' }))
+            }}>
+              <option value="">Search or select caste</option>
+              {castes.filter(c => !form.casteCategory || c.category === form.casteCategory).map(c => <option key={c.id} value={c.name}>{c.name} ({c.category})</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label>Sub-caste (Optional)</label>
+            <select value={form.subCaste} onChange={e => set('subCaste', e.target.value)} disabled={!form.caste}>
+              <option value="">Select sub-caste</option>
+              {subCastes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
             </select>
           </div>
         </div>
@@ -159,7 +181,7 @@ export default function Register() {
             {wards.length ? (
               <select value={form.ward} onChange={e => set('ward', e.target.value)}>
                 <option value="">Select ward</option>
-                {wards.map(w => <option key={w} value={w}>{w}</option>)}
+                {wards.map(w => <option key={w.id} value={w.label}>{w.label}</option>)}
               </select>
             ) : (
               <input value={form.ward} onChange={e => set('ward', e.target.value)} placeholder="Enter your ward number" disabled={!form.mandal} />

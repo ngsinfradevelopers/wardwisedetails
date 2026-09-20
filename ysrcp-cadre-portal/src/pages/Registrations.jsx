@@ -14,7 +14,7 @@ export default function Registrations() {
   useEffect(() => { load() }, [])
 
   const filtered = useMemo(() => registrations.filter(r => {
-    const text = `${r.name} ${r.surname} ${r.id} ${r.phone} ${r.voterId}`.toLowerCase()
+    const text = Object.values(r).filter(Boolean).join(' ').toLowerCase()
     return (!query || text.includes(query.toLowerCase())) &&
       (!status || r.status === status) &&
       (!committee || r.committeeType === committee)
