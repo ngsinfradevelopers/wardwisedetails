@@ -19,11 +19,11 @@ export default function Register() {
   const isEdit = !!id
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     if (isEdit) {
-      const r = db.getRegistration(id)
-      if (r) setForm({ ...EMPTY, ...r })
+      db.getRegistration(id).then(r => { if (r) setForm({ ...EMPTY, ...r }) }).catch(error => setLoadError(error.message))
     }
   }, [id])
 
@@ -63,17 +63,20 @@ export default function Register() {
     return !Object.keys(e).length
   }
 
-  const submit = ev => {
+  const submit = async ev => {
     ev.preventDefault()
     if (!validate()) return
     const payload = { ...form, age: Number(form.age), voterId: form.voterId.toUpperCase() }
-    if (isEdit) db.updateRegistration(id, payload)
-    else db.addRegistration(payload)
-    nav('/registrations')
+    try {
+      if (isEdit) await db.updateRegistration(id, payload)
+      else await db.addRegistration(payload)
+      nav('/registrations')
+    } catch (error) { setLoadError(error.message) }
   }
 
   return (
     <form className="stack" onSubmit={submit}>
+      {loadError && <p className="error">{loadError}</p>}
       <div className="panel">
         <h3>{isEdit ? 'Edit Registration' : 'New Registration'}</h3>
         <div className="grid2">

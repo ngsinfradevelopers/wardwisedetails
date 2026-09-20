@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { db } from './store/db.js'
 import Layout from './components/Layout.jsx'
 import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Register from './pages/Register.jsx'
 import Registrations from './pages/Registrations.jsx'
 import Settings from './pages/Settings.jsx'
+import { useSession } from './hooks/useSession.js'
 
 function Protected({ children }) {
-  return db.session() ? children : <Navigate to="/login" replace />
+  const { user, loading } = useSession()
+  if (loading) return <div className="page"><p className="muted">Loading session...</p></div>
+  return user ? children : <Navigate to="/login" replace />
 }
 
 export default function App() {

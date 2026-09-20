@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { db } from '../store/db.js'
 import StatCard from '../components/StatCard.jsx'
+import { useSession } from '../hooks/useSession.js'
 
 const quick = [
   { to: '/register', icon: '👤+', label: 'Register' },
@@ -10,14 +11,20 @@ const quick = [
 ]
 
 export default function Dashboard() {
-  const s = db.session()
-  const st = db.stats()
-  const recent = db.getRegistrations().slice(0, 5)
+  const { displayName } = useSession()
+  const [st, setStats] = useState({ total: 0, partyCore: 0, affiliated: 0, pct: 0 })
+  const [recent, setRecent] = useState([])
+  const [error, setError] = useState('')
+  useEffect(() => {
+    Promise.all([db.stats(), db.getRegistrations()])
+      .then(([stats, registrations]) => { setStats(stats); setRecent(registrations.slice(0, 5)) })
+      .catch(err => setError(err.message))
+  }, [])
   return (
     <div className="stack">
       <div className="hero">
         <div>
-          <h1>Welcome back, {s?.name?.split(' ')[0]}</h1>
+          <h1>Welcome back, {displayName.split(' ')[0]}</h1>
           <p className="muted">Santhyamgulur — live operational overview</p>
           <div className="stats">
             <StatCard label="TOTAL REGISTRATIONS" value={st.total} tone="t-green" />
@@ -62,7 +69,7 @@ export default function Dashboard() {
             <span className={`pill ${r.status?.replace(' ', '')}`}>{r.status}</span>
           </Link>
         ))}
-        {!recent.length && <p className="muted">No registrations yet.</p>}
+        {!recent.length && <p className="muted">{error || 'No registrations yet.'}</p>}
       </div>
     </div>
   )

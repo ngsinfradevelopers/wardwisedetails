@@ -8,9 +8,10 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState('')
-  const submit = e => {
+  const submit = async e => {
     e.preventDefault()
-    if (db.login(email.trim().toLowerCase(), password)) nav('/')
+    const ok = await db.login(email.trim().toLowerCase(), password)
+    if (ok) nav('/')
     else setErr('Invalid email or password')
   }
   return (

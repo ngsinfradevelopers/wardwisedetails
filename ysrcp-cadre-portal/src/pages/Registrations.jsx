@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CandidateCard from '../components/CandidateCard.jsx'
 import { db } from '../store/db.js'
@@ -8,8 +8,10 @@ export default function Registrations() {
   const [status, setStatus] = useState('')
   const [committee, setCommittee] = useState('')
   const [view, setView] = useState(0)
-  const [, refresh] = useState(0)
-  const registrations = db.getRegistrations()
+  const [registrations, setRegistrations] = useState([])
+  const [error, setError] = useState('')
+  const load = () => db.getRegistrations().then(setRegistrations).catch(err => setError(err.message))
+  useEffect(() => { load() }, [])
 
   const filtered = useMemo(() => registrations.filter(r => {
     const text = `${r.name} ${r.surname} ${r.id} ${r.phone} ${r.voterId}`.toLowerCase()
@@ -18,9 +20,8 @@ export default function Registrations() {
       (!committee || r.committeeType === committee)
   }), [registrations, query, status, committee])
 
-  const remove = id => {
-    db.deleteRegistration(id)
-    refresh(value => value + 1)
+  const remove = async id => {
+    try { await db.deleteRegistration(id); await load() } catch (err) { setError(err.message) }
   }
 
   return (
@@ -64,7 +65,7 @@ export default function Registrations() {
           ))}
         </div>
       )}
-      {!filtered.length && <div className="panel"><p className="muted">No registrations match your filters.</p></div>}
+      {!filtered.length && <div className="panel"><p className="muted">{error || 'No registrations match your filters.'}</p></div>}
     </div>
   )
 }

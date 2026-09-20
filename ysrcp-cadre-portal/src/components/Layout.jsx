@@ -1,6 +1,7 @@
 import React from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { db } from '../store/db.js'
+import { useSession } from '../hooks/useSession.js'
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: '▦' },
@@ -11,7 +12,7 @@ const nav = [
 
 export default function Layout() {
   const nav2 = useNavigate()
-  const s = db.session()
+  const { displayName } = useSession()
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -30,17 +31,17 @@ export default function Layout() {
           ))}
         </nav>
         <div className="side-foot">
-          <span className="avatar">{(s?.name || 'A')[0]}</span>
+          <span className="avatar">{displayName[0]}</span>
           <div>
-            <strong>{s?.name || 'Admin'}</strong>
-            <button className="link" onClick={() => { db.logout(); nav2('/login') }}>Logout ⎋</button>
+            <strong>{displayName}</strong>
+            <button className="link" onClick={async () => { await db.logout(); nav2('/login') }}>Logout ⎋</button>
           </div>
         </div>
       </aside>
       <main className="main">
         <header className="topbar">
           <span className="crumbs">Home / <b>{location.pathname === '/' ? 'Dashboard' : location.pathname.slice(1)}</b></span>
-          <span className="top-right"><span className="avatar green">{(s?.name || 'A')[0]}</span> {s?.name}</span>
+          <span className="top-right"><span className="avatar green">{displayName[0]}</span> {displayName}</span>
         </header>
         <div className="page"><Outlet /></div>
       </main>
