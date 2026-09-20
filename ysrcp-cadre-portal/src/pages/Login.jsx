@@ -10,9 +10,9 @@ export default function Login() {
   const [err, setErr] = useState('')
   const submit = async e => {
     e.preventDefault()
-    const ok = await db.login(email.trim().toLowerCase(), password)
-    if (ok) nav('/')
-    else setErr('Invalid email or password')
+    const result = await db.login(email.trim().toLowerCase(), password)
+    if (result.ok) nav('/')
+    else setErr(result.error || 'Invalid email or password')
   }
   return (
     <div className="login-wrap">

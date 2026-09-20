@@ -29,7 +29,7 @@ function getSettings() {
 }
 
 export const db = {
-  async login(email, password) { const { error } = await supabase.auth.signInWithPassword({ email, password }); return !error },
+  async login(email, password) { const { error } = await supabase.auth.signInWithPassword({ email, password }); return { ok: !error, error: error?.message || '' } },
   async logout() { await supabase.auth.signOut() },
   async session() { const { data } = await supabase.auth.getSession(); return data.session?.user || null },
   getSettings,
