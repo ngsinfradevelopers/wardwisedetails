@@ -25,7 +25,7 @@ export default function Dashboard() {
       <div className="hero">
         <div>
           <h1>Welcome back, {displayName.split(' ')[0]}</h1>
-          <p className="muted">Santhyamgulur — live operational overview</p>
+          <p className="muted">Santhamaguluru — live operational overview</p>
           <div className="stats">
             <StatCard label="TOTAL REGISTRATIONS" value={st.total} tone="t-green" />
             <StatCard label="PARTY CORE" value={st.partyCore} tone="t-blue" />

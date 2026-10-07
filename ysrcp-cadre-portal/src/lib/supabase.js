@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL || 'https://c--199c2ac2-1ae2-4880-8634-4b2f3e47b2f0-prod.lovable.cloud'
+const envUrl = import.meta.env.VITE_SUPABASE_URL
+const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'twyzqcziynovswqakyco'
+const fallbackUrl = `https://${projectId}.supabase.co`
+const url = envUrl && !envUrl.includes('lovable.cloud') ? envUrl : fallbackUrl
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_WlUkbu1KmJZUfECvfFn3TA_hueEtHeT'
 
 if (!url || !key) {

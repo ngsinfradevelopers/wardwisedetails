@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   professions: ['Farmer', 'Student', 'Employee', 'Business', 'Teacher', 'Labour', 'Unemployed', 'Other'],
   castes: [{ name: 'Reddy', category: 'OC' }, { name: 'Kamma', category: 'OC' }, { name: 'Kapu', category: 'BC' }, { name: 'Golla', category: 'BC' }, { name: 'Mala', category: 'SC' }, { name: 'Madiga', category: 'SC' }, { name: 'Yanadi', category: 'ST' }, { name: 'Other', category: 'Other' }],
   casteCategories: ['OC', 'BC', 'SC', 'ST', 'Other'],
-  mandals: [{ name: 'Santhyamgulur Mandal', wards: ['Ward-1', 'Ward-2', 'Ward-3', 'Ward-4', 'Ward-5'] }],
+  mandals: [{ name: 'Santhamaguluru Mandal', wards: ['Ward-1', 'Ward-2', 'Ward-3', 'Ward-4', 'Ward-5'] }],
   designations: ['President', 'General Secretary', 'Treasurer', 'Vice President', 'Secretary', 'Member'],
   levels: ['District', 'Mandal', 'Ward'],
   statuses: ['Pending', 'Verified', 'Not Verified'],
@@ -17,11 +17,12 @@ const DEFAULT_SETTINGS = {
 function emit() { window.dispatchEvent(new Event('ysrcp-db-change')) }
 
 function fromRow(row) {
-  return { ...row, id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, subCaste: row.sub_caste, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
+  const village = row.village?.toLowerCase() === 'santhyamguluru' ? 'Santhamaguluru' : row.village
+  return { ...row, village, id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, subCaste: row.sub_caste, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
 }
 
 function toRow(data, user) {
-  return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: data.village || 'Santhyamguluru', district: data.district || 'Prakasam', mandal: data.mandal || '', ward_no: Number.parseInt(String(data.ward).replace(/\D/g, ''), 10), photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
+  return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: data.village || 'Santhamaguluru', district: data.district || 'Prakasam', mandal: data.mandal || '', ward_no: Number.parseInt(String(data.ward).replace(/\D/g, ''), 10), photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
 }
 
 function getSettings() {
@@ -29,7 +30,19 @@ function getSettings() {
 }
 
 export const db = {
-  async login(email, password) { const { error } = await supabase.auth.signInWithPassword({ email, password }); return { ok: !error, error: error?.message || '' } },
+  async login(email, password) {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) return { ok: false, error: error.message || 'Invalid email or password' }
+      return { ok: true, error: '' }
+    } catch (err) {
+      const message = err?.message || 'Authentication service unavailable'
+      if (message.includes('Failed to fetch') || message.includes('ERR_NAME_NOT_RESOLVED') || message.includes('fetch')) {
+        return { ok: false, error: 'Authentication service is unavailable. Please check your internet connection and Supabase configuration.' }
+      }
+      return { ok: false, error: message }
+    }
+  },
   async logout() { await supabase.auth.signOut() },
   async session() { const { data } = await supabase.auth.getSession(); return data.session?.user || null },
   getSettings,

@@ -9,7 +9,7 @@ const EMPTY = {
   committeeType: '', committeeLevel: '', designation: '',
   surname: '', name: '', fatherHusband: '', age: '', voterId: '', phone: '',
   gender: '', qualification: '', profession: '', caste: '', casteCategory: '', subCaste: '',
-  village: 'Santhyamguluru', district: 'Prakasam', mandal: '', ward: '', status: 'Pending', photo: null,
+  village: 'Santhamaguluru', district: 'Prakasam', mandal: '', ward: '', status: 'Pending', photo: null,
 }
 
 export default function Register() {
