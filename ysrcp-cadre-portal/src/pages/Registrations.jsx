@@ -7,6 +7,7 @@ export default function Registrations() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [committee, setCommittee] = useState('')
+  const [party, setParty] = useState('')
   const [view, setView] = useState(0)
   const [registrations, setRegistrations] = useState([])
   const [error, setError] = useState('')
@@ -17,8 +18,9 @@ export default function Registrations() {
     const text = Object.values(r).filter(Boolean).join(' ').toLowerCase()
     return (!query || text.includes(query.toLowerCase())) &&
       (!status || r.status === status) &&
-      (!committee || r.committeeType === committee)
-  }), [registrations, query, status, committee])
+      (!committee || r.committeeType === committee) &&
+      (!party || r.partyAffiliation === party)
+  }), [registrations, query, status, committee, party])
 
   const remove = async id => {
     try { await db.deleteRegistration(id); await load() } catch (err) { setError(err.message) }
@@ -52,13 +54,29 @@ export default function Registrations() {
             <button className={view === 1 ? 'on' : ''} onClick={() => setView(1)}>Compact</button>
           </div>
         </div>
+        <div className="party-filters" role="group" aria-label="Filter registrations by party">
+          {[['', 'All Parties'], ['Y', 'Party (Y)'], ['N', 'Party (N)'], ['O', 'Party (O)']].map(([value, label]) => {
+            const count = value ? registrations.filter(r => r.partyAffiliation === value).length : registrations.length
+            return (
+              <button
+                key={value || 'all'}
+                type="button"
+                className={`btn ${party === value ? 'green' : 'ghost'}`}
+                aria-pressed={party === value}
+                onClick={() => setParty(value)}
+              >
+                {label} ({count})
+              </button>
+            )
+          })}
+        </div>
       </div>
       {view === 0 ? filtered.map(r => <CandidateCard key={r.id} r={r} onDelete={remove} />) : (
         <div className="panel">
           {filtered.map(r => (
             <div className="recent-row" key={r.id}>
               {r.photo ? <img src={r.photo} className="mini-photo" alt="" /> : <span className="mini-photo placeholder">{(r.name || '?')[0]}</span>}
-              <div><strong>{r.name}{r.surname ? ` ${r.surname}` : ''}</strong><small>{r.id} · {r.committeeType} · {r.designation}</small></div>
+              <div><strong>{r.name}{r.surname ? ` ${r.surname}` : ''}</strong><small>{r.id} · {r.partyAffiliation ? `Party (${r.partyAffiliation}) · ` : ''}{r.committeeType} · {r.designation}</small></div>
               <span className={`pill ${r.status?.replace(' ', '')}`}>{r.status}</span>
               <Link className="btn ghost" to={`/register/${r.id}`}>Edit</Link>
             </div>

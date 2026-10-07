@@ -21,6 +21,7 @@ export default function CandidateCard({ r, onDelete }) {
         </div>
       </div>
       <div className="card-grid">
+        <div><small>PARTY</small><p>{r.partyAffiliation ? `Party (${r.partyAffiliation})` : '—'}</p></div>
         <div><small>COMMITTEE</small><p>{r.committeeType}</p></div>
         <div><small>POSITION</small><p>{r.designation}</p></div>
         <div><small>LEVEL</small><p>{r.committeeLevel}</p></div>
@@ -35,6 +36,7 @@ export default function CandidateCard({ r, onDelete }) {
           <div><small>FATHER / HUSBAND</small><p>{r.fatherHusband}</p></div>
           <div><small>AGE</small><p>{r.age}</p></div>
           <div><small>GENDER</small><p>{r.gender || '—'}</p></div>
+          <div><small>PARTY</small><p>{r.partyAffiliation ? `Party (${r.partyAffiliation})` : '—'}</p></div>
           <div><small>QUALIFICATION</small><p>{r.qualification}</p></div>
           <div><small>PROFESSION</small><p>{r.profession || '—'}</p></div>
           <div><small>CASTE</small><p>{r.caste || '—'} {r.casteCategory ? `(${r.casteCategory})` : ''}</p></div>

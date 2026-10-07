@@ -3,7 +3,7 @@ function escapeHtml(value) {
 }
 
 function memberRow(record) {
-  return `<tr><td>${escapeHtml(record.name)} ${escapeHtml(record.surname)}</td><td>${escapeHtml(record.ward)}</td><td>${escapeHtml(record.committeeType)}</td><td>${escapeHtml(record.designation)}</td><td>${escapeHtml(record.phone)}</td><td>${escapeHtml(record.status)}</td></tr>`
+  return `<tr><td>${escapeHtml(record.name)} ${escapeHtml(record.surname)}</td><td>${escapeHtml(record.ward)}</td><td>${escapeHtml(record.partyAffiliation ? `Party (${record.partyAffiliation})` : '')}</td><td>${escapeHtml(record.committeeType)}</td><td>${escapeHtml(record.designation)}</td><td>${escapeHtml(record.phone)}</td><td>${escapeHtml(record.status)}</td></tr>`
 }
 
 function documentHtml(title, body) {
@@ -17,11 +17,11 @@ export function buildCadrePdf(records, title = 'Cadre Registration Report') {
     groups[key].push(record)
     return groups
   }, {})
-  const sections = Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([ward, wardRecords]) => `<h2>${escapeHtml(ward)} (${wardRecords.length})</h2><table><thead><tr><th>Name</th><th>Ward</th><th>Committee</th><th>Designation</th><th>Phone</th><th>Status</th></tr></thead><tbody>${wardRecords.map(memberRow).join('')}</tbody></table>`).join('')
+  const sections = Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([ward, wardRecords]) => `<h2>${escapeHtml(ward)} (${wardRecords.length})</h2><table><thead><tr><th>Name</th><th>Ward</th><th>Party</th><th>Committee</th><th>Designation</th><th>Phone</th><th>Status</th></tr></thead><tbody>${wardRecords.map(memberRow).join('')}</tbody></table>`).join('')
   return documentHtml(title, `<h1>${escapeHtml(title)}</h1><p class="meta">Total records: ${records.length} · Generated: ${new Date().toLocaleString('en-IN')}</p>${sections || '<p>No records found.</p>'}`)
 }
 
 export function buildMemberPdf(record) {
-  const fields = [['Name', `${record.name || ''} ${record.surname || ''}`], ['Father / Husband', record.fatherHusband], ['Age', record.age], ['Phone', record.phone], ['Voter ID', record.voterId], ['Gender', record.gender], ['Qualification', record.qualification], ['Profession', record.profession], ['Caste', `${record.caste || ''} ${record.subCaste || ''}`], ['Committee', record.committeeType], ['Designation', record.designation], ['Ward', record.ward], ['Mandal', record.mandal], ['Status', record.status]]
+  const fields = [['Name', `${record.name || ''} ${record.surname || ''}`], ['Father / Husband', record.fatherHusband], ['Age', record.age], ['Phone', record.phone], ['Voter ID', record.voterId], ['Gender', record.gender], ['Qualification', record.qualification], ['Party', record.partyAffiliation ? `Party (${record.partyAffiliation})` : ''], ['Profession', record.profession], ['Caste', `${record.caste || ''} ${record.subCaste || ''}`], ['Committee', record.committeeType], ['Designation', record.designation], ['Ward', record.ward], ['Mandal', record.mandal], ['Status', record.status]]
   return documentHtml('Cadre Member Sheet', `<h1>Cadre Member Sheet</h1><p class="meta">Reference: ${escapeHtml(record.id)}</p><table>${fields.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</table>`)
 }

@@ -8,7 +8,7 @@ const PHONE_RE = /^\d{10}$/
 const EMPTY = {
   committeeType: '', committeeLevel: '', designation: '',
   surname: '', name: '', fatherHusband: '', age: '', voterId: '', phone: '',
-  gender: '', qualification: '', profession: '', caste: '', casteCategory: '', subCaste: '',
+  gender: '', qualification: '', profession: '', caste: '', casteCategory: '', subCaste: '', partyAffiliation: '',
   village: 'Santhamaguluru', district: 'Prakasam', mandal: '', ward: '', status: 'Pending', photo: null,
 }
 
@@ -69,6 +69,7 @@ export default function Register() {
     if (form.voterId && !VOTER_RE.test(form.voterId)) e.voterId = 'Voter ID must be 3 letters + 7 numbers (e.g. ABC1234567)'
     if (!form.gender) e.gender = 'Select gender'
     if (!form.qualification) e.qualification = 'Select qualification'
+    if (!form.partyAffiliation) e.partyAffiliation = 'Select party'
     if (!form.committeeType) e.committeeType = 'Select committee type'
     if (!form.designation) e.designation = 'Select designation'
     if (!form.committeeLevel) e.committeeLevel = 'Select level'
@@ -136,6 +137,14 @@ export default function Register() {
           </div>
           {sel('gender', 'Gender', settings.genders)}
           {sel('qualification', 'Qualification', settings.qualifications)}
+          <div className="field">
+            <label>Party *</label>
+            <select value={form.partyAffiliation} onChange={e => set('partyAffiliation', e.target.value)}>
+              <option value="">Select party</option>
+              {['Y', 'N', 'O'].map(value => <option key={value} value={value}>Party ({value})</option>)}
+            </select>
+            {errors.partyAffiliation && <small className="error">{errors.partyAffiliation}</small>}
+          </div>
           {sel('profession', 'Profession', settings.professions, false)}
           <div className="field">
             <label>Caste Category</label>
