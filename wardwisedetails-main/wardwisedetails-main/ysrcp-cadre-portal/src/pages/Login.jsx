@@ -18,7 +18,7 @@ export default function Login() {
     <div className="login-wrap">
       <div className="login-left">
         <img src="/home.png" alt="YSRCP Leaders" className="leader-img" />
-        <h2>Sri Y.S. Jagan Mohan Reddy</h2>
+        <h2>GADDAM VENKAT REDDY (GVR)</h2>
         <p>YSRCP Cadre Portal — empowering every cadre, building a better Andhra Pradesh</p>
       </div>
       <form className="login-card" onSubmit={submit}>
