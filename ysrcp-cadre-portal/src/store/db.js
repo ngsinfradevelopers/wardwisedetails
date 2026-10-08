@@ -48,7 +48,17 @@ function throwRegistrationError(error) {
 }
 
 function getSettings() {
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || DEFAULT_SETTINGS } catch { return DEFAULT_SETTINGS }
+  try {
+    const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || DEFAULT_SETTINGS
+    return {
+      ...settings,
+      mandals: Array.isArray(settings.mandals)
+        ? settings.mandals.map(mandal => ({ ...mandal, name: normalizeMandal(mandal.name) }))
+        : DEFAULT_SETTINGS.mandals,
+    }
+  } catch {
+    return DEFAULT_SETTINGS
+  }
 }
 
 export const db = {
