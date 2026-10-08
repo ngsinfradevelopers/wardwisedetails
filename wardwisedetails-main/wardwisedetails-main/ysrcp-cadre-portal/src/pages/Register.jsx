@@ -23,6 +23,7 @@ export default function Register() {
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [loadError, setLoadError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     Promise.all([db.fetchWards(), db.fetchCastes()]).then(([wardsFromDb, castesFromDb]) => {
@@ -35,7 +36,12 @@ export default function Register() {
 
   useEffect(() => {
     if (isEdit) {
-      db.getRegistration(id).then(r => { if (r) setForm({ ...EMPTY, ...r }) }).catch(error => setLoadError(error.message))
+      db.getRegistration(id)
+        .then(r => {
+          if (r) setForm({ ...EMPTY, ...r })
+          else setLoadError('Registration was not found.')
+        })
+        .catch(error => setLoadError(error.message || 'Could not load this registration.'))
     }
   }, [id])
 
@@ -69,7 +75,7 @@ export default function Register() {
     if (form.voterId && !VOTER_RE.test(form.voterId)) e.voterId = 'Voter ID must be 3 letters + 7 numbers (e.g. ABC1234567)'
     if (!form.gender) e.gender = 'Select gender'
     if (!form.qualification) e.qualification = 'Select qualification'
-    if (!form.partyAffiliation) e.partyAffiliation = 'Select party'
+    if (!form.partyAffiliation && !isEdit) e.partyAffiliation = 'Select party'
     if (!form.committeeType) e.committeeType = 'Select committee type'
     if (!form.designation) e.designation = 'Select designation'
     if (!form.committeeLevel) e.committeeLevel = 'Select level'
@@ -81,13 +87,19 @@ export default function Register() {
 
   const submit = async ev => {
     ev.preventDefault()
-    if (!validate()) return
+    setLoadError('')
+    if (!validate() || submitting) return
     const payload = { ...form, age: Number(form.age), voterId: form.voterId.toUpperCase() }
+    setSubmitting(true)
     try {
       if (isEdit) await db.updateRegistration(id, payload)
       else await db.addRegistration(payload)
       nav('/registrations')
-    } catch (error) { setLoadError(error.message) }
+    } catch (error) {
+      setLoadError(error.message || 'Could not save this registration. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -138,9 +150,9 @@ export default function Register() {
           {sel('gender', 'Gender', settings.genders)}
           {sel('qualification', 'Qualification', settings.qualifications)}
           <div className="field">
-            <label>Party *</label>
+            <label>Party {isEdit && !form.partyAffiliation ? '(Not set on existing record)' : '*'}</label>
             <select value={form.partyAffiliation} onChange={e => set('partyAffiliation', e.target.value)}>
-              <option value="">Select party</option>
+              <option value="">{isEdit ? 'Not set' : 'Select party'}</option>
               {['Y', 'N', 'O'].map(value => <option key={value} value={value}>Party ({value})</option>)}
             </select>
             {errors.partyAffiliation && <small className="error">{errors.partyAffiliation}</small>}
@@ -208,7 +220,7 @@ export default function Register() {
 
       <div className="actions-row">
         <button type="button" className="btn ghost" onClick={() => nav('/registrations')}>Cancel</button>
-        <button className="btn green">{isEdit ? 'Update Registration' : 'Submit Registration'}</button>
+        <button className="btn green" disabled={submitting}>{submitting ? 'Saving…' : isEdit ? 'Update Registration' : 'Submit Registration'}</button>
       </div>
     </form>
   )

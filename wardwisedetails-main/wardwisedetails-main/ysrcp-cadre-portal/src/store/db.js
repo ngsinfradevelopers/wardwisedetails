@@ -17,12 +17,14 @@ const DEFAULT_SETTINGS = {
 function emit() { window.dispatchEvent(new Event('ysrcp-db-change')) }
 
 function fromRow(row) {
-  const village = row.village?.toLowerCase() === 'santhyamguluru' ? 'Santhamaguluru' : row.village
-  return { ...row, village, partyAffiliation: row.party_affiliation || '', id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, subCaste: row.sub_caste, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
+  const normalizedVillage = row.village?.toLowerCase()
+  const village = ['santhyamguluru', 'santhamaguluruu'].includes(normalizedVillage) ? 'Santhamaguluru' : row.village
+  return { ...row, village: village || '', surname: row.surname || '', name: row.full_name || '', fatherHusband: row.father_husband || '', age: row.age ?? '', voterId: row.voter_id || '', phone: row.phone || '', gender: row.gender || '', qualification: row.qualification || '', profession: row.profession || '', caste: row.caste || '', partyAffiliation: row.party_affiliation || '', casteCategory: row.caste_category || '', subCaste: row.sub_caste || '', committeeType: row.committee_type || '', committeeLevel: row.committee_level || '', designation: row.designation || '', status: row.status || 'Pending', district: row.district || '', mandal: row.mandal || '', ward: row.label || (row.ward_no == null ? '' : `Ward-${row.ward_no}`), photo: row.photo || null, id: row.ref_code || row.id, createdBy: row.created_by_name || row.created_by || '', createdAt: row.created_at, updatedAt: row.updated_at }
 }
 
 function toRow(data, user) {
-  return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, party_affiliation: data.partyAffiliation || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: data.village || 'Santhamaguluru', district: data.district || 'Prakasam', mandal: data.mandal || '', ward_no: Number.parseInt(String(data.ward).replace(/\D/g, ''), 10), photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
+  const wardNumber = String(data.ward || '').match(/\d+/)?.[0]
+  return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, party_affiliation: data.partyAffiliation || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: data.village || 'Santhamaguluru', district: data.district || 'Prakasam', mandal: data.mandal || '', ward_no: wardNumber ? Number(wardNumber) : null, photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
 }
 
 function getSettings() {
@@ -58,8 +60,9 @@ export const db = {
     return data || []
   },
   async updateWard(id, changes) {
-    const { error } = await supabase.from('wards').update(changes).eq('id', id)
+    const { data, error } = await supabase.from('wards').update(changes).eq('id', id).select('id').single()
     if (error) throw error
+    if (!data) throw new Error('Ward was not found.')
     emit()
   },
   async addWard(ward) {
@@ -95,7 +98,7 @@ export const db = {
   async getRegistrations() { const { data, error } = await supabase.from('cadre').select('*').order('created_at', { ascending: false }); if (error) throw error; return (data || []).map(fromRow) },
   async getRegistration(id) { const { data, error } = await supabase.from('cadre').select('*').eq('ref_code', id).maybeSingle(); if (error) throw error; return data ? fromRow(data) : null },
   async addRegistration(data) { const user = await db.session(); const refCode = `YSRCP-${Date.now()}`; const { data: row, error } = await supabase.from('cadre').insert({ ...toRow(data, user), ref_code: refCode }).select().single(); if (error) throw error; emit(); return fromRow(row) },
-  async updateRegistration(id, data) { const { error } = await supabase.from('cadre').update(toRow(data, await db.session())).eq('ref_code', id); if (error) throw error; emit() },
-  async deleteRegistration(id) { const { error } = await supabase.from('cadre').delete().eq('ref_code', id); if (error) throw error; emit() },
+  async updateRegistration(id, data) { const changes = toRow(data, await db.session()); delete changes.created_by; delete changes.created_by_name; const { data: row, error } = await supabase.from('cadre').update(changes).eq('ref_code', id).select('ref_code').single(); if (error) throw error; if (!row) throw new Error('Registration was not found.'); emit() },
+  async deleteRegistration(id) { const { data, error } = await supabase.from('cadre').delete().eq('ref_code', id).select('ref_code').single(); if (error) throw error; if (!data) throw new Error('Registration was not found.'); emit() },
   async stats() { const registrations = await db.getRegistrations(); const partyCore = registrations.filter(r => r.committeeType === 'Party Core Committee').length; return { total: registrations.length, partyCore, affiliated: registrations.length - partyCore, pct: registrations.length ? Math.round((partyCore / registrations.length) * 100) : 0 } },
 }

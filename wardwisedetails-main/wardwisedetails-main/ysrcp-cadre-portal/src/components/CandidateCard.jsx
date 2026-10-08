@@ -29,6 +29,7 @@ export default function CandidateCard({ r, onDelete }) {
         <div><small>VOTER ID</small><p>{r.voterId || '—'}</p></div>
         <div><small>PHONE</small><p>+91 {r.phone}</p></div>
         <div><small>CREATED</small><p>{new Date(r.createdAt).toLocaleString('en-IN')}</p></div>
+        <div><small>LAST UPDATED</small><p>{r.updatedAt || r.createdAt ? new Date(r.updatedAt || r.createdAt).toLocaleString('en-IN') : '—'}</p></div>
         <div><small>STATUS</small><p><span className={`pill ${r.status?.replace(' ', '')}`}>{r.status}</span></p></div>
       </div>
       {open && (

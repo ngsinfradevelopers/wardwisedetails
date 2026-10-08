@@ -11,8 +11,23 @@ export default function Registrations() {
   const [view, setView] = useState(0)
   const [registrations, setRegistrations] = useState([])
   const [error, setError] = useState('')
-  const load = () => db.getRegistrations().then(setRegistrations).catch(err => setError(err.message))
-  useEffect(() => { load() }, [])
+  const [loading, setLoading] = useState(true)
+  const load = async () => {
+    setLoading(true)
+    try {
+      setRegistrations(await db.getRegistrations())
+      setError('')
+    } catch (err) {
+      setError(err.message || 'Could not load registrations.')
+    } finally {
+      setLoading(false)
+    }
+  }
+  useEffect(() => {
+    load()
+    window.addEventListener('focus', load)
+    return () => window.removeEventListener('focus', load)
+  }, [])
 
   const filtered = useMemo(() => registrations.filter(r => {
     const text = Object.values(r).filter(Boolean).join(' ').toLowerCase()
@@ -28,6 +43,7 @@ export default function Registrations() {
 
   return (
     <div className="stack">
+      {error && <div className="panel"><p className="error">{error}</p></div>}
       <div className="panel">
         <div className="card-head">
           <div className="card-id">
@@ -76,14 +92,15 @@ export default function Registrations() {
           {filtered.map(r => (
             <div className="recent-row" key={r.id}>
               {r.photo ? <img src={r.photo} className="mini-photo" alt="" /> : <span className="mini-photo placeholder">{(r.name || '?')[0]}</span>}
-              <div><strong>{r.name}{r.surname ? ` ${r.surname}` : ''}</strong><small>{r.id} · {r.partyAffiliation ? `Party (${r.partyAffiliation}) · ` : ''}{r.committeeType} · {r.designation}</small></div>
+              <div><strong>{r.name}{r.surname ? ` ${r.surname}` : ''}</strong><small>{r.id} · {r.partyAffiliation ? `Party (${r.partyAffiliation}) · ` : ''}{r.committeeType} · {r.designation} · Updated {r.updatedAt || r.createdAt ? new Date(r.updatedAt || r.createdAt).toLocaleString('en-IN') : '—'}</small></div>
               <span className={`pill ${r.status?.replace(' ', '')}`}>{r.status}</span>
               <Link className="btn ghost" to={`/register/${r.id}`}>Edit</Link>
             </div>
           ))}
         </div>
       )}
-      {!filtered.length && <div className="panel"><p className="muted">{error || 'No registrations match your filters.'}</p></div>}
+      {!loading && !filtered.length && !error && <div className="panel"><p className="muted">No registrations match your filters.</p></div>}
+      {loading && <div className="panel"><p className="muted">Loading registrations...</p></div>}
     </div>
   )
 }
