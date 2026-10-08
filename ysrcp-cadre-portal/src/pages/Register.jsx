@@ -23,6 +23,7 @@ export default function Register() {
   const [form, setForm] = useState(EMPTY)
   const [errors, setErrors] = useState({})
   const [loadError, setLoadError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     Promise.all([db.fetchWards(), db.fetchCastes()]).then(([wardsFromDb, castesFromDb]) => {
@@ -83,16 +84,21 @@ export default function Register() {
     ev.preventDefault()
     if (!validate()) return
     const payload = { ...form, age: Number(form.age), voterId: form.voterId.toUpperCase() }
+    setLoadError('')
+    setSubmitting(true)
     try {
       if (isEdit) await db.updateRegistration(id, payload)
       else await db.addRegistration(payload)
       nav('/registrations')
-    } catch (error) { setLoadError(error.message) }
+    } catch (error) {
+      setLoadError(error.message || 'Registration could not be saved. Please try again.')
+      setSubmitting(false)
+    }
   }
 
   return (
     <form className="stack" onSubmit={submit}>
-      {loadError && <p className="error">{loadError}</p>}
+      {loadError && <p className="error" role="alert">{loadError}</p>}
       <div className="panel">
         <h3>{isEdit ? 'Edit Registration' : 'New Registration'}</h3>
         <div className="grid2">
@@ -208,7 +214,7 @@ export default function Register() {
 
       <div className="actions-row">
         <button type="button" className="btn ghost" onClick={() => nav('/registrations')}>Cancel</button>
-        <button className="btn green">{isEdit ? 'Update Registration' : 'Submit Registration'}</button>
+        <button className="btn green" disabled={submitting}>{submitting ? 'Saving…' : isEdit ? 'Update Registration' : 'Submit Registration'}</button>
       </div>
     </form>
   )

@@ -25,6 +25,16 @@ function toRow(data, user) {
   return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, party_affiliation: data.partyAffiliation || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: data.village || 'Santhamaguluru', district: data.district || 'Prakasam', mandal: data.mandal || '', ward_no: Number.parseInt(String(data.ward).replace(/\D/g, ''), 10), photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
 }
 
+function throwRegistrationError(error) {
+  if (
+    (error.code === '42703' || error.code === 'PGRST204') &&
+    error.message?.includes('party_affiliation')
+  ) {
+    throw new Error('The database is missing the Party (Y/N/O) field. Apply the Supabase migration 20261007000000_add_party_affiliation_to_cadre.sql, then try again.')
+  }
+  throw error
+}
+
 function getSettings() {
   try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || DEFAULT_SETTINGS } catch { return DEFAULT_SETTINGS }
 }
@@ -94,8 +104,8 @@ export const db = {
   },
   async getRegistrations() { const { data, error } = await supabase.from('cadre').select('*').order('created_at', { ascending: false }); if (error) throw error; return (data || []).map(fromRow) },
   async getRegistration(id) { const { data, error } = await supabase.from('cadre').select('*').eq('ref_code', id).maybeSingle(); if (error) throw error; return data ? fromRow(data) : null },
-  async addRegistration(data) { const user = await db.session(); const refCode = `YSRCP-${Date.now()}`; const { data: row, error } = await supabase.from('cadre').insert({ ...toRow(data, user), ref_code: refCode }).select().single(); if (error) throw error; emit(); return fromRow(row) },
-  async updateRegistration(id, data) { const { error } = await supabase.from('cadre').update(toRow(data, await db.session())).eq('ref_code', id); if (error) throw error; emit() },
+  async addRegistration(data) { const user = await db.session(); const refCode = `YSRCP-${Date.now()}`; const { data: row, error } = await supabase.from('cadre').insert({ ...toRow(data, user), ref_code: refCode }).select().single(); if (error) throwRegistrationError(error); emit(); return fromRow(row) },
+  async updateRegistration(id, data) { const { error } = await supabase.from('cadre').update(toRow(data, await db.session())).eq('ref_code', id); if (error) throwRegistrationError(error); emit() },
   async deleteRegistration(id) { const { error } = await supabase.from('cadre').delete().eq('ref_code', id); if (error) throw error; emit() },
   async stats() { const registrations = await db.getRegistrations(); const partyCore = registrations.filter(r => r.committeeType === 'Party Core Committee').length; return { total: registrations.length, partyCore, affiliated: registrations.length - partyCore, pct: registrations.length ? Math.round((partyCore / registrations.length) * 100) : 0 } },
 }
