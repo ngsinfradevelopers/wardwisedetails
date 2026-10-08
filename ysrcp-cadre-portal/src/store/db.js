@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js'
 
 const SETTINGS_KEY = 'ysrcp_cadre_settings_v1'
+const SANTHAMAGULURU_ALIASES = new Set(['santhamaguluru', 'santhyamgulur', 'santhyamguluru'])
 const DEFAULT_SETTINGS = {
   committeeTypes: [{ id: 'party-core', name: 'Party Core Committee' }, { id: 'affiliated-wing', name: 'Affiliated Wing' }],
   genders: ['Male', 'Female', 'Other'],
@@ -16,13 +17,24 @@ const DEFAULT_SETTINGS = {
 
 function emit() { window.dispatchEvent(new Event('ysrcp-db-change')) }
 
+function normalizeMandal(value) {
+  if (typeof value !== 'string') return value
+  const trimmed = value.trim()
+  const mandalSuffix = /\s+mandal$/i.test(trimmed)
+  const name = trimmed.replace(/\s+mandal$/i, '').trim()
+  if (SANTHAMAGULURU_ALIASES.has(name.toLowerCase())) {
+    return `Santhamaguluru${mandalSuffix ? ' Mandal' : ''}`
+  }
+  return trimmed
+}
+
 function fromRow(row) {
-  const village = row.village?.toLowerCase() === 'santhyamguluru' ? 'Santhamaguluru' : row.village
-  return { ...row, village, partyAffiliation: row.party_affiliation || '', id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, subCaste: row.sub_caste, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
+  const village = normalizeMandal(row.village)
+  return { ...row, village, mandal: normalizeMandal(row.mandal), partyAffiliation: row.party_affiliation || '', id: row.ref_code || row.id, name: row.full_name, fatherHusband: row.father_husband, committeeType: row.committee_type, committeeLevel: row.committee_level, voterId: row.voter_id, casteCategory: row.caste_category, subCaste: row.sub_caste, ward: row.label || `Ward-${row.ward_no}`, createdBy: row.created_by_name || row.created_by, createdAt: row.created_at, updatedAt: row.updated_at }
 }
 
 function toRow(data, user) {
-  return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, party_affiliation: data.partyAffiliation || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: data.village || 'Santhamaguluru', district: data.district || 'Prakasam', mandal: data.mandal || '', ward_no: Number.parseInt(String(data.ward).replace(/\D/g, ''), 10), photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
+  return { full_name: data.name, surname: data.surname || null, father_husband: data.fatherHusband, age: Number(data.age) || null, voter_id: data.voterId || null, phone: data.phone, gender: data.gender || null, qualification: data.qualification || null, profession: data.profession || null, caste: data.caste || null, caste_category: data.casteCategory || null, sub_caste: data.subCaste || null, party_affiliation: data.partyAffiliation || null, committee_type: data.committeeType, committee_level: data.committeeLevel, designation: data.designation, status: data.status || 'Pending', village: normalizeMandal(data.village) || 'Santhamaguluru', district: data.district || 'Prakasam', mandal: normalizeMandal(data.mandal) || '', ward_no: Number.parseInt(String(data.ward).replace(/\D/g, ''), 10), photo: data.photo || null, created_by: user?.id || null, created_by_name: user?.user_metadata?.full_name || user?.email || null }
 }
 
 function throwRegistrationError(error) {
@@ -60,12 +72,12 @@ export const db = {
   async fetchWards() {
     const { data, error } = await supabase.from('wards').select('id, ward_no, label, mandal, active').eq('active', true).order('ward_no')
     if (error) throw error
-    return data || []
+    return (data || []).map(ward => ({ ...ward, mandal: normalizeMandal(ward.mandal) }))
   },
   async fetchAllWards() {
     const { data, error } = await supabase.from('wards').select('id, ward_no, label, mandal, active').order('ward_no')
     if (error) throw error
-    return data || []
+    return (data || []).map(ward => ({ ...ward, mandal: normalizeMandal(ward.mandal) }))
   },
   async updateWard(id, changes) {
     const { error } = await supabase.from('wards').update(changes).eq('id', id)
@@ -73,7 +85,7 @@ export const db = {
     emit()
   },
   async addWard(ward) {
-    const { data, error } = await supabase.from('wards').insert(ward).select().single()
+    const { data, error } = await supabase.from('wards').insert({ ...ward, mandal: normalizeMandal(ward.mandal) }).select().single()
     if (error) throw error
     emit()
     return data
